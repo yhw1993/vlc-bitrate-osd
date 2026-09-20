@@ -2,9 +2,7 @@
 
 给 VLC 加上实时码率、丢帧与流漂移监控——直接叠在播放器画面上。
 
-<!--![VLC Bitrate OSD 浮窗叠加在视频窗口上](assets/screenshot-osd.png)-->
-
-> 截图尚未提交，拍摄方法见 `assets/README.md`；拍好后删掉本行上下的注释标记即可显示。
+![VLC Bitrate OSD 浮窗叠加在视频窗口上](assets/screenshot-osd.png)
 
 VLC 能给你画面，却看不到流的健康状况。这个项目提供两种独立的查看方式：
 
@@ -69,7 +67,7 @@ scripts/start_two_vlc.bat
 
 脚本会启动两个 VLC（HTTP 端口 8080 / 8081），各自带一个浮窗，通过 `--instance 0` / `--instance 1` 分别吸附到对应的 VLC 窗口。
 
-<!--![两个浮窗，各对应一个 VLC 实例](assets/screenshot-dual.png)-->
+![两个浮窗，各对应一个 VLC 实例](assets/screenshot-dual.png)
 
 ## 双播放器同步
 

@@ -2,7 +2,7 @@
 
 Real-time bitrate, frame-drop and stream-drift monitoring for VLC — overlaid on the player itself.
 
-<!--![One VLC window with the OSD overlay pinned to its top-right corner](assets/screenshot-osd.png)-->
+![One VLC window with the OSD overlay pinned to its top-right corner](assets/screenshot-osd.png)
 
 yhw1993
 
@@ -69,11 +69,7 @@ scripts/start_two_vlc.bat
 
 Launches two VLC instances (HTTP 8080 / 8081), each with its own overlay, pinned to the matching VLC window through `--instance 0` / `--instance 1`.
 
-<!-- Screenshots are not committed yet; see assets/README.md for how to capture
-     them safely. Uncomment the two embeds below once the PNGs exist.
 ![Two overlays, one per VLC instance](assets/screenshot-dual.png)
--->
-
 
 ## Keeping two players in sync
 

@@ -119,22 +119,32 @@ def render_frame(index, width, height, fps):
 def write_avi(path, width, height, fps, num_frames, frame_size):
     """Write an uncompressed DIB AVI. Returns the file size in bytes.
 
-    Every frame is the same size, so the container sizes are known up front.
-    That lets the file stream out frame by frame instead of being buffered in
-    memory - a 1080p minute would otherwise need a couple of gigabytes of RAM.
+    Every frame is the same size, so the container can be streamed out frame by
+    frame instead of being buffered - a 1080p minute would otherwise need a
+    couple of gigabytes of RAM.
+
+    The file carries an ``idx1`` index. It is not optional in practice: VLC
+    refuses to open an AVI without one and reports "Broken or missing Index",
+    even though the frames themselves decode perfectly. Offsets in the index
+    are relative to the start of the ``movi`` FourCC, so the first entry is 4.
     """
+    pad = frame_size & 1                     # chunks are word aligned
+    frame_stride = 8 + frame_size + pad
+    movi_size = 4 + num_frames * frame_stride      # 'movi' + the frame chunks
+    idx1_size = 8 + num_frames * 16                # chunk header + entries
+
     with open(path, "wb") as f:
         # --- hdrl LIST ---
         hdrl_content = b"hdrl"
         # avih: AVIMAINHEADER, 14 ints = 56 bytes.
-        # dwFlags stays 0 because this file carries no idx1 index chunk, and
-        # claiming AVIF_HASINDEX without one makes strict parsers unhappy.
+        AVIF_HASINDEX = 0x00000010
+        AVIF_ISINTERLEAVED = 0x00000100
         avih_data = struct.pack(
             "<IIIIIIIIIIIIII",
             1000000 // fps,   # dwMicroSecPerFrame
             0,                # dwMaxBytesPerSec (unknown for raw video)
             0,                # dwPaddingGranularity
-            0,                # dwFlags - no index present
+            AVIF_HASINDEX | AVIF_ISINTERLEAVED,   # dwFlags
             num_frames,       # dwTotalFrames
             0,                # dwInitialFrames
             1,                # dwStreams
@@ -182,10 +192,9 @@ def write_avi(path, width, height, fps, num_frames, frame_size):
         hdrl_content += b"LIST" + struct.pack("<I", len(strl_content)) + strl_content
 
         # --- movi LIST ---
-        # Sizes are computable without rendering anything: 'movi' plus a
+        # Sizes are computable without rendering anything: 'movi' plus an
         # 8-byte chunk header per frame, and every frame is frame_size bytes.
-        movi_size = 4 + num_frames * (8 + frame_size)
-        riff_size = 4 + (8 + len(hdrl_content)) + (8 + movi_size)
+        riff_size = 4 + (8 + len(hdrl_content)) + (8 + movi_size) + idx1_size
 
         f.write(b"RIFF" + struct.pack("<I", riff_size) + b"AVI ")
         f.write(b"LIST" + struct.pack("<I", len(hdrl_content)) + hdrl_content)
@@ -194,6 +203,19 @@ def write_avi(path, width, height, fps, num_frames, frame_size):
         for i in range(num_frames):
             f.write(b"00dc" + struct.pack("<I", frame_size))
             f.write(render_frame(i, width, height, fps))
+            if pad:
+                f.write(b"\x00")
+
+        # --- idx1 ---
+        # Offsets are relative to the 'movi' FourCC itself, so entry i points
+        # at 4 + i * frame_stride: the position of that frame's chunk header.
+        # (Verified against an ffmpeg-produced rawvideo AVI, whose first entry
+        # is likewise 4.)
+        AVIIF_KEYFRAME = 0x00000010
+        f.write(b"idx1" + struct.pack("<I", num_frames * 16))
+        for i in range(num_frames):
+            f.write(b"00dc" + struct.pack("<III", AVIIF_KEYFRAME,
+                                          4 + i * frame_stride, frame_size))
 
     return os.path.getsize(path)
 
@@ -242,13 +264,19 @@ def main(argv=None):
             for p in problems:
                 print("  FAIL %s" % p)
             return 1
-        print("  structure OK (RIFF/AVI, %d movi frames of %d bytes)"
+        print("  structure OK (RIFF/AVI, %d movi frames of %d bytes, idx1 index)"
               % (num_frames, frame_size))
     return 0
 
 
 def verify_avi(path, expect_frames, frame_size):
-    """Re-read the container and confirm it says what we meant to write."""
+    """Re-read the container and confirm it is laid out as intended.
+
+    Structural only - it does not decode. Playback is a separate question, and
+    VLC is the authority there: it refuses outright to open an AVI whose idx1
+    index is missing, with "Broken or missing Index", even when every frame
+    decodes fine. So the index is checked explicitly rather than assumed.
+    """
     with open(path, "rb") as f:
         data = f.read()
 
@@ -262,14 +290,26 @@ def verify_avi(path, expect_frames, frame_size):
         problems.append("RIFF size %d does not match file length %d"
                         % (riff_size + 8, len(data)))
 
-    idx = data.find(b"movi")
-    if idx < 0:
+    pad = frame_size & 1
+    stride = 8 + frame_size + pad
+
+    # avih must advertise the index, or a player may not bother looking for it.
+    avih = data.find(b"avih")
+    if avih < 0:
+        problems.append("no avih chunk")
+    else:
+        flags = struct.unpack("<I", data[avih + 20:avih + 24])[0]
+        if not flags & 0x00000010:      # AVIF_HASINDEX
+            problems.append("avih dwFlags lacks AVIF_HASINDEX (0x%08x)" % flags)
+
+    mv = data.find(b"movi")
+    if mv < 8:
         problems.append("no movi LIST found")
         return problems
 
-    pos = idx + 4
+    pos = mv + 4
     found = 0
-    while pos + 8 <= len(data):
+    while found < expect_frames and pos + 8 <= len(data):
         fourcc = data[pos:pos + 4]
         chunk_size = struct.unpack("<I", data[pos + 4:pos + 8])[0]
         if fourcc != b"00dc":
@@ -278,11 +318,36 @@ def verify_avi(path, expect_frames, frame_size):
             problems.append("frame %d has size %d, expected %d"
                             % (found, chunk_size, frame_size))
             break
-        pos += 8 + chunk_size
+        pos += stride
         found += 1
 
     if found != expect_frames:
         problems.append("movi holds %d frames, expected %d" % (found, expect_frames))
+
+    # idx1 must sit immediately after the movi list, and its offsets must
+    # actually land on chunk headers.
+    movi_list_size = struct.unpack("<I", data[mv - 4:mv])[0]
+    ix = mv + movi_list_size
+    if data[ix:ix + 4] != b"idx1":
+        problems.append("no idx1 chunk directly after the movi list")
+        return problems
+
+    entries = struct.unpack("<I", data[ix + 4:ix + 8])[0] // 16
+    if entries != expect_frames:
+        problems.append("idx1 holds %d entries, expected %d" % (entries, expect_frames))
+
+    for probe in (0, entries // 2, entries - 1):
+        if not 0 <= probe < entries:
+            continue
+        off = struct.unpack("<I", data[ix + 8 + probe * 16 + 8:
+                                       ix + 8 + probe * 16 + 12])[0]
+        want = 4 + probe * stride
+        if off != want:
+            problems.append("idx1 entry %d offset is %d, expected %d"
+                            % (probe, off, want))
+        elif data[mv + off:mv + off + 4] != b"00dc":
+            problems.append("idx1 entry %d does not point at a chunk header" % probe)
+
     return problems
 
 
