@@ -40,7 +40,7 @@ Overlay window-pinning is Windows-specific (`EnumWindows`). Everything else is p
 vlc --extraintf http --http-port 8080 --http-password vlc123
 ```
 
-On Windows you can instead run `scripts/start_vlc_osd.bat`.
+On Windows you can instead run `scripts/start_vlc_osd.bat`. Machine-specific paths (your Python interpreter, your VLC install) belong in `scripts/local.bat` — it is git-ignored, so they never reach the repository. The launchers also verify that the Python they are about to use actually has tkinter, rather than starting an overlay that dies on import.
 
 ### 2. Start the overlay
 
@@ -184,6 +184,7 @@ See the flag table above.
 | Hotkeys do nothing              | Another app holds the global bindings. Click the overlay once, then press again.                   |
 | Sync keeps correcting           | `--drift` is below the GOP duration. Raise it.                                                     |
 | HTTP 401                        | Password mismatch between VLC's `--http-password` and the tool's `--password`.                     |
+| Launcher: no Python with tkinter | Your default `python` lacks tkinter — common with bundled/embedded interpreters. Point `PYTHON` in `scripts/local.bat` at a full interpreter that has it. |
 
 ## License
 

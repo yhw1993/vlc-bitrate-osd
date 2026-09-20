@@ -18,6 +18,9 @@ venv/
 /video/
 /out/
 
+# Machine-local overrides (absolute paths, user names - keep them out)
+/scripts/local.bat
+
 # Editors / OS
 .vscode/
 .idea/

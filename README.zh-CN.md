@@ -40,7 +40,7 @@ VLC 是最顺手的播放器，这些数据它内部全都采集了——只是�
 vlc --extraintf http --http-port 8080 --http-password vlc123
 ```
 
-Windows 上也可以直接运行 `scripts/start_vlc_osd.bat`。
+Windows 上也可以直接运行 `scripts/start_vlc_osd.bat`。与本机相关的路径（Python 解释器、VLC 安装位置）写进 `scripts/local.bat`——该文件已被 git 忽略，不会进仓库。启动脚本会先确认所用的 Python 确实带 tkinter，避免浮窗刚起来就倒在 import 上。
 
 ### 2. 启动浮窗
 
@@ -180,6 +180,7 @@ VLC 暴露了 `demuxbitrate` 和 `inputbitrate`，但这两个都是**指数滑�
 | 快捷键没反应 | 全局绑定被其他程序抢了。先点一下浮窗再按。 |
 | 同步一直在纠偏 | `--drift` 小于一个 GOP 时长，调大。 |
 | HTTP 401 | VLC 的 `--http-password` 与工具的 `--password` 不一致。 |
+| 启动脚本报"没有带 tkinter 的 Python" | 系统默认的 `python` 不带 tkinter（嵌入式/绿色版包常见）。在 `scripts/local.bat` 里把 `PYTHON` 指向一个带 tkinter 的解释器完整路径。 |
 
 ## 许可
 

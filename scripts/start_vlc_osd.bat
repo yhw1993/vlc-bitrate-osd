@@ -11,9 +11,39 @@ REM ============================================================
 REM ---------------- Configuration ----------------
 REM Edit these paths for your machine.
 set "VLC_PATH=C:\Program Files\VideoLAN\VLC\vlc.exe"
-set "PYTHON=python"
+REM Leave PYTHON empty to auto-detect an interpreter that has tkinter,
+REM or pin it to a full path, e.g. set "PYTHON=D:\Python311\python.exe"
+REM A machine-local override can also go in scripts\local.bat (git-ignored).
+set "PYTHON="
 set "HTTP_PORT=8080"
 set "HTTP_PASS=vlc123"
+REM -----------------------------------------------
+
+REM Optional machine-local override (git-ignored). Set PYTHON or VLC_PATH in
+REM scripts\local.bat so your personal paths never end up in the repository.
+if exist "%~dp0local.bat" call "%~dp0local.bat"
+
+REM ---------------- Python check ----------------
+REM The overlay is a tkinter window, and tkinter is an optional component:
+REM several Windows Python bundles and most Linux distros without python3-tk
+REM do not ship it. Launching a broken overlay silently is worse than
+REM refusing to start, so the interpreter is verified up front.
+if not defined PYTHON (
+    for %%P in (python py python3) do (
+        if not defined PYTHON (
+            %%P -c "import tkinter" >nul 2>&1 && set "PYTHON=%%P"
+        )
+    )
+)
+if not defined PYTHON (
+    echo [ERROR] No Python with tkinter found ^(tried: python, py, python3^).
+    echo         The OSD overlay needs tkinter. Either install it, or set
+    echo         PYTHON in this script to a full path that has it, e.g.
+    echo             set "PYTHON=D:\Python311\python.exe"
+    pause
+    exit /b 1
+)
+echo Using Python: %PYTHON%
 REM -----------------------------------------------
 
 if not exist "%VLC_PATH%" (
