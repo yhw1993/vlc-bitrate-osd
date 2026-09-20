@@ -1,0 +1,12 @@
+# Normalise line endings across platforms.
+# The .bat launchers must stay CRLF: cmd.exe mis-parses LF-only batch files.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets - never let git touch these.
+*.png binary
+*.jpg binary
+*.avi binary
+*.mp4 binary
+*.mkv binary

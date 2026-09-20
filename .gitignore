@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Logs and diagnostics
+*.log
+*.err
+
+# Local media / test artifacts (never commit large files)
+*.avi
+*.mp4
+*.mkv
+*.ts
+*.bmp
+/video/
+/out/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
