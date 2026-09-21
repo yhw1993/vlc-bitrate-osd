@@ -2,9 +2,9 @@
 
 Real-time bitrate, frame-drop and stream-drift monitoring for VLC — overlaid on the player itself.
 
-![One VLC window with the OSD overlay pinned to its top-right corner](assets/screenshot-osd.png)
+by yhw1993.USTC
 
-yhw1993
+![One VLC window with the OSD overlay pinned to its top-right corner](assets/screenshot-osd.png)
 
 VLC gives you the picture but no live view of stream health. This project adds two independent ways to see the numbers:
 

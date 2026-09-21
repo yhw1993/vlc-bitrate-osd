@@ -2,6 +2,8 @@
 
 给 VLC 加上实时码率、丢帧与流漂移监控——直接叠在播放器画面上。
 
+by yhw1993.USTC
+
 ![VLC Bitrate OSD 浮窗叠加在视频窗口上](assets/screenshot-osd.png)
 
 VLC 能给你画面，却看不到流的健康状况。这个项目提供两种独立的查看方式：
