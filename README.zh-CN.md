@@ -2,7 +2,7 @@
 
 给 VLC 加上实时码率、丢帧与流漂移监控——直接叠在播放器画面上。
 
-by yhw1993.USTC
+by yhw1993@USTC
 
 ![VLC Bitrate OSD 浮窗叠加在视频窗口上](assets/screenshot-osd.png)
 

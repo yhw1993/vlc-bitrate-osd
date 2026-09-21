@@ -2,7 +2,7 @@
 
 Real-time bitrate, frame-drop and stream-drift monitoring for VLC — overlaid on the player itself.
 
-by yhw1993.USTC
+by yhw1993@USTC
 
 ![One VLC window with the OSD overlay pinned to its top-right corner](assets/screenshot-osd.png)
 
